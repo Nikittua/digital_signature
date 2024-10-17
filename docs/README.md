@@ -71,7 +71,7 @@
 
 1. **Повредите публичный ключ:**
 ```shell
-echo "Некорректные данные" > public_key.pem`
+echo "Некорректные данные" > public_key.pem
 ``` 
 2. **Проверка подписи:**
     
@@ -81,7 +81,11 @@ echo "Некорректные данные" > public_key.pem`
 
 **Ожидаемый результат:**
 
-Программа должна вывести ошибку чтения публичного ключа и не продолжать проверку.
+```shell
+Ошибка чтения публичного ключа
+140708887415680:error:0909006C:PEM routines:get_name:no start line:../crypto/pem/pem_lib.c:745:Expecting: PUBLIC KEY
+Ошибка при проверке подписи.
+```
 
 ## **Тест 2: Проверка обработки ошибок при поврежденном приватном ключе**
 
@@ -97,33 +101,128 @@ echo "Некорректные данные" > private_key.pem
 ./digital_signature -s -i input.txt -o signature.bin -k private_key.pem
 ```
 
-
 **Ожидаемый результат:**
 
-Программа должна вывести ошибку чтения приватного ключа и не продолжать подпись.
+```shell
+Ошибка чтения приватного ключа
+140156451810176:error:0909006C:PEM routines:get_name:no start line:../crypto/pem/pem_lib.c:745:Expecting: ANY PRIVATE KEY
+Ошибка при выработке подписи.
+```
 
 ## **Тест 3: Проверка недействительности подписи при изменении файла**
 
 1. **Подпишите исходный файл:**
     
 ```shell
-./digital_signature -s -i testfile.txt -o signature.bin -k private_key.pem
+./digital_signature -s -i input.txt -o signature.bin -k private_key.pem
 ```
 
 2. **Измените файл после подписи:**
     
 ```shell
-echo "Дополнительный текст" >> testfile.txt
+echo "Дополнительный текст" >> input.txt
 ```
     
 3. **Проверьте подпись:**
 ```shell
-./digital_signature -v -i testfile.txt -o signature.bin -k public_key.pem
+./digital_signature -v -i input.txt -o signature.bin -k public_key.pem
 ```
-
 
 **Ожидаемый результат:**
 
 Программа должна сообщить, что подпись недействительна.
 
 
+## **Тест 4: Использование неправильного типа ключа**
+
+1. **Попытка проверки подписи с использованием приватного ключа:**
+    
+```shell
+./digital_signature -v -i input.txt -o signature.bin -k private_key.pem
+```
+**Ожидаемый результат:**
+
+```shell
+Ошибка чтения публичного ключа
+139640573381504:error:0909006C:PEM routines:get_name:no start line:../crypto/pem/pem_lib.c:745:Expecting: PUBLIC KEY
+Ошибка при проверке подписи.
+```
+
+
+## **Тест 5: Некорректное использование команды**
+
+1. **Пропуск обязательных аргументов:**
+    
+```shell
+./digital_signature -s -i input.txt -o signature.bin
+```
+
+2. **Использование неверных опций:**
+    
+```shell
+./digital_signature -z -i input.txt -o signature.bin -k private_key.pem
+```
+**Ожидаемый результат:**
+```shell
+#Программа должна вывести справку по использованию и указать на отсутствие необходимых аргументов или наличие неверных опций.
+
+./digital_signature: invalid option -- 'z'
+Использование: ./digital_signature [опции]
+Опции:
+  -g               Генерация пары ключей
+  -s               Подписать файл
+  -v               Проверить подпись
+  -i <входной>     Входной файл
+  -o <выходной>    Выходной файл
+  -k <файл ключа>  Файл ключа (приватный или публичный)
+  -p <публ. ключ>  Файл публичного ключа (для генерации ключей)
+  -b <размер>      Размер ключа в битах (по умолчанию 2048)
+  -h               Показать эту справку
+
+```
+
+## **Тест 6: Использование неверного публичного ключа**
+
+1. **Генерация второй пары ключей:**
+    
+```shell
+./digital_signature -g -k private_key2.pem -p public_key2.pem
+```
+
+2. **Подпись файла с помощью первого приватного ключа:**
+    
+```shell
+./digital_signature -s -i input.txt -o signature.bin -k private_key.pem
+```
+    
+3. **Проверка подписи с помощью второго публичного ключа:**
+```shell
+./digital_signature -v -i input.txt -o signature.bin -k public_key2.pem
+```
+
+**Ожидаемый результат:**
+
+Программа должна сообщить, что подпись недействительна.
+
+
+## **Тест 7: Отсутствующие файлы**
+
+1. **Попытка подписать несуществующий файл:**
+    
+```shell
+./digital_signature -s -i nonexistent.txt -o signature.bin -k private_key.pem
+```
+
+2. **Попытка проверить подпись с отсутствующим файлом подписи:**
+    
+```shell
+./digital_signature -v -i testfile.txt -o nonexistent_signature.bin -k public_key.pem
+```
+
+**Ожидаемый результат:**
+
+```shell
+Ошибка открытия входного файла: No such file or directory
+Ошибка при проверке подписи.
+
+```

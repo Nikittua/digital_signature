@@ -29,18 +29,7 @@ int verify_file(const char *input_file, const char *signature_file, const char *
 
     // Создаем контекст для проверки
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-    if (!mdctx) {
-        fprintf(stderr, "Ошибка создания контекста EVP_MD_CTX\n");
-        EVP_PKEY_free(pkey);
-        return -1;
-    }
-
-    if (EVP_VerifyInit(mdctx, EVP_sha256()) != 1) {
-        fprintf(stderr, "Ошибка инициализации EVP_VerifyInit\n");
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(pkey);
-        return -1;
-    }
+    EVP_VerifyInit(mdctx, EVP_sha256());
 
     // Читаем входной файл
     FILE *in_fp = fopen(input_file, "rb");
@@ -56,10 +45,7 @@ int verify_file(const char *input_file, const char *signature_file, const char *
     int ret = -1; // Инициализируем код возврата ошибкой
 
     while ((len = fread(buffer, 1, sizeof(buffer), in_fp)) > 0) {
-        if (EVP_VerifyUpdate(mdctx, buffer, len) != 1) {
-            fprintf(stderr, "Ошибка в EVP_VerifyUpdate\n");
-            goto cleanup;
-        }
+        EVP_VerifyUpdate(mdctx, buffer, len);
     }
 
     if (ferror(in_fp)) {

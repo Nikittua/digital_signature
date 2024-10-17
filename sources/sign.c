@@ -29,18 +29,8 @@ int sign_file(const char *input_file, const char *signature_file, const char *pr
 
     // Создаем контекст для подписи
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-    if (!mdctx) {
-        fprintf(stderr, "Ошибка создания контекста EVP_MD_CTX\n");
-        EVP_PKEY_free(pkey);
-        return -1;
-    }
+    EVP_SignInit(mdctx, EVP_sha256());
 
-    if (EVP_SignInit(mdctx, EVP_sha256()) != 1) {
-        fprintf(stderr, "Ошибка инициализации EVP_SignInit\n");
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(pkey);
-        return -1;
-    }
 
     // Читаем входной файл
     FILE *in_fp = fopen(input_file, "rb");
@@ -56,11 +46,9 @@ int sign_file(const char *input_file, const char *signature_file, const char *pr
     int ret = -1; // Инициализируем код возврата ошибкой
 
     while ((len = fread(buffer, 1, sizeof(buffer), in_fp)) > 0) {
-        if (EVP_SignUpdate(mdctx, buffer, len) != 1) {
-            fprintf(stderr, "Ошибка в EVP_SignUpdate\n");
-            goto cleanup;
-        }
+        EVP_SignUpdate(mdctx, buffer, len);
     }
+    
 
     if (ferror(in_fp)) {
         perror("Ошибка чтения входного файла");
@@ -75,12 +63,8 @@ int sign_file(const char *input_file, const char *signature_file, const char *pr
         goto cleanup;
     }
 
-    if (EVP_SignFinal(mdctx, sig, &sig_len, pkey) != 1) {
-        fprintf(stderr, "Ошибка в EVP_SignFinal\n");
-        ERR_print_errors_fp(stderr);
-        free(sig);
-        goto cleanup;
-    }
+    EVP_SignFinal(mdctx, sig, &sig_len, pkey);
+
 
     // Сохраняем подпись
     FILE *out_fp = fopen(signature_file, "wb");

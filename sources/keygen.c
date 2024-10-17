@@ -24,21 +24,40 @@ int generate_keys(const char *private_key_file, const char *public_key_file, int
     EVP_PKEY_assign_RSA(pkey, rsa);
     rsa = NULL; // rsa теперь принадлежит pkey
 
-    // Сохранение приватного ключа
+    // Сохраняем приватный ключ
     FILE *priv_fp = fopen(private_key_file, "wb");
-    PEM_write_PrivateKey(priv_fp, pkey, NULL, NULL, 0, NULL, NULL);
+    if (!priv_fp) {
+        perror("Ошибка открытия файла приватного ключа");
+        goto cleanup;
+    }
+    if (!PEM_write_PrivateKey(priv_fp, pkey, NULL, NULL, 0, NULL, NULL)) {
+        fprintf(stderr, "Ошибка записи приватного ключа\n");
+        ERR_print_errors_fp(stderr);
+        fclose(priv_fp);
+        goto cleanup;
+    }
     fclose(priv_fp);
 
-    // Сохранение публичного ключа
+    // Сохраняем публичный ключ
     FILE *pub_fp = fopen(public_key_file, "wb");
-    PEM_write_PUBKEY(pub_fp, pkey);
+    if (!pub_fp) {
+        perror("Ошибка открытия файла публичного ключа");
+        goto cleanup;
+    }
+    if (!PEM_write_PUBKEY(pub_fp, pkey)) {
+        fprintf(stderr, "Ошибка записи публичного ключа\n");
+        ERR_print_errors_fp(stderr);
+        fclose(pub_fp);
+        goto cleanup;
+    }
     fclose(pub_fp);
 
     ret = 0; // Успешное выполнение
 
-    // Очистка ресурсов
-    BN_free(bn);
-    EVP_PKEY_free(pkey);
+cleanup:
+    if (bn) BN_free(bn);
+    if (rsa) RSA_free(rsa);
+    if (pkey) EVP_PKEY_free(pkey);
 
     return ret;
 }

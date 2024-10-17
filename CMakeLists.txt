@@ -4,7 +4,7 @@ project(digital_signature C)
 set(CMAKE_C_STANDARD 99)
 
 # Указываем путь к заголовочным файлам
-include_directories(include)
+include_directories(headers)
 
 # Ищем библиотеку OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -12,10 +12,10 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 # Добавляем исходные файлы
 add_executable(digital_signature
-    src/main.c
-    src/sign.c
-    src/verify.c
-    src/keygen.c
+    sources/main.c
+    sources/sign.c
+    sources/verify.c
+    sources/keygen.c
 )
 
 # Линкуем библиотеки OpenSSL
